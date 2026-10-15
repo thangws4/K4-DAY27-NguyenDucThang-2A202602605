@@ -18,6 +18,19 @@ AUTO_APPROVE_THRESHOLD = 0.73   # >= 73% → no human, agent commits the comment
 ESCALATE_THRESHOLD = 0.58       # < 58% → escalate: agent asks the reviewer specific questions
 # 58–72% inclusive → human approval flow (reviewer clicks Approve / Reject / Edit)
 
+# Without a rubric the LLM self-reports ~80% on everything, so every PR auto-approves.
+CONFIDENCE_RUBRIC = (
+    "`confidence` = how sure you are that this PR is safe to merge with only your comments, "
+    "with NO human reviewer. Calibrate strictly:\n"
+    f"- >= {AUTO_APPROVE_THRESHOLD:.2f}: trivial/mechanical change (typo, dependency bump, tiny refactor), "
+    "no comment of severity 'issue' or 'blocker'.\n"
+    f"- {ESCALATE_THRESHOLD:.2f}-{AUTO_APPROVE_THRESHOLD - 0.01:.2f}: small feature that looks correct "
+    "but has open questions a human should glance at. Schema/migration impact, input validation, "
+    "help text or missing tests alone belong HERE, not lower.\n"
+    f"- < {ESCALATE_THRESHOLD:.2f}: ONLY for security-sensitive code (auth, passwords, hashing, tokens/secrets, "
+    "network sync, SQL built from strings), any 'blocker', or intent you cannot infer from the diff."
+)
+
 
 def risk_level_for(confidence: float) -> str:
     """Map confidence → risk_level (used in AuditEntry).
